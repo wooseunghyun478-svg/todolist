@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>오늘의 Todo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <h1>오늘의 일정</h1>
+    <p id="today"></p>
+  </header>
+
+  <section class="progress-box">
+    <div class="progress-label">
+      <span>달성률</span>
+      <span id="percent">0%</span>
+    </div>
+    <div class="progress-bar"><div id="bar"></div></div>
+  </section>
+
+  <section class="controls">
+    <label><input type="checkbox" id="darkToggle"> 다크모드</label>
+    <button id="reset">체크 초기화</button>
+  </section>
+
+  <section id="todo"></section>
+
+</div>
+
+<script>
+// 데이터: PDF에서 추출한 전체 일정 (출처: 업로드한 PDF). :contentReference[oaicite:1]{index=1}
+const tasks = [
+  /* 11/27 */
+  {"date":"11/27","text":"목 13:00~14:00 미시경제학 1단원 1~10p (상세 학습)"},
+  {"date":"11/27","text":"목 14:00~15:00 투자론 1단원 1~10p (상세 학습)"},
+  {"date":"11/27","text":"목 15:00~16:00 경영학원론 1강 15p 정리 및 암기 (1/2)"},
+  {"date":"11/27","text":"목 17:00~18:00 미시경제학 1단원 11~20p"},
+  {"date":"11/27","text":"목 18:00~19:00 조직이론과 설계 1단원 공부 (핵심 개념 정리)"},
+  {"date":"11/27","text":"목 20:00~21:00 투자론 1단원 11~20p"},
+  {"date":"11/27","text":"목 21:00~22:00 경영학원론 1강 15p 정리 및 암기 (2/2)"},
+  {"date":"11/27","text":"목 22:00~23:00 미시경제학 1단원 21~30p"},
+  {"date":"11/27","text":"목 23:00~24:00 조직이론과 설계 1단원 족보 풀기 및 오픈북 위치 파악"},
+
+  /* 11/28 */
+  {"date":"11/28","text":"금 15:00~16:00 미시경제학 1단원 31~40p"},
+  {"date":"11/28","text":"금 16:00~17:00 투자론 1단원 21~30p"},
+  {"date":"11/28","text":"금 17:00~18:00 조직이론과 설계 2단원 공부 (핵심 개념 정리)"},
+  {"date":"11/28","text":"금 19:00~20:00 미시경제학 1단원 41~50p"},
+  {"date":"11/28","text":"금 20:00~21:00 경영학원론 2강 30p 정리 및 암기"},
+  {"date":"11/28","text":"금 21:00~22:00 투자론 1단원 31~40p"},
+  {"date":"11/28","text":"금 22:00~23:00 조직이론과 설계 2단원 족보 풀기 및 오픈북 위치 파악"},
+  {"date":"11/28","text":"금 23:00~24:00 미시경제학 1단원 51~60p (1단원 완료)"},
+
+  /* 11/29 */
+  {"date":"11/29","text":"토 21:00~22:00 투자론 1단원 41~50p"},
+  {"date":"11/29","text":"11/29 토 22:00~23:00 미시경제학 2단원 1~10p"},
+  {"date":"11/29","text":"11/29 토 23:00~24:00 경영학원론 3강 15p 정리 및 암기 (1/2)"},
+
+  /* 11/30 */
+  {"date":"11/30","text":"일 13:00~14:00 미시경제학 2단원 11~20p"},
+  {"date":"11/30","text":"일 14:00~15:00 투자론 1단원 51~60p (1단원 완료)"},
+  {"date":"11/30","text":"일 15:00~16:00 조직이론과 설계 3단원 공부 (핵심 개념 정리)"},
+  {"date":"11/30","text":"일 17:00~18:00 경영학원론 3강 15p 정리 및 암기 (2/2)"},
+  {"date":"11/30","text":"일 18:00~19:00 미시경제학 2단원 21~30p"},
+  {"date":"11/30","text":"일 20:00~21:00 투자론 2단원 1~10p"},
+  {"date":"11/30","text":"일 21:00~22:00 조직이론과 설계 3단원 족보 풀기 및 오픈북 위치 파악"},
+  {"date":"11/30","text":"일 22:00~23:00 미시경제학 2단원 31~40p"},
+  {"date":"11/30","text":"일 23:00~24:00 경영학원론 4강 15p 정리 및 암기 (1/2)"},
+
+  /* 12/1 */
+  {"date":"12/1","text":"월 13:30~14:30 미시경제학 2단원 41~50p"},
+  {"date":"12/1","text":"월 14:30~15:30 투자론 2단원 11~20p"},
+  {"date":"12/1","text":"월 15:30~16:30 경영학원론 4강 15p 정리 및 암기 (2/2)"},
+  {"date":"12/1","text":"월 16:30~17:30 조직이론과 설계 4단원 공부 및 족보 풀기 (초기 학습 완료)"},
+  {"date":"12/1","text":"월 18:30~19:30 미시경제학 2단원 51~60p (2단원 완료)"},
+  {"date":"12/1","text":"월 20:30~21:30 투자론 2단원 21~30p"},
+  {"date":"12/1","text":"월 21:30~22:30 경영학원론 5강 30p 정리 및 암기 (초기 학습 완료)"},
+  {"date":"12/1","text":"월 22:30~23:30 미시경제학 3단원 1~10p"},
+
+  /* 12/2 */
+  {"date":"12/2","text":"화 19:00~20:00 미시경제학 3단원 11~20p"},
+  {"date":"12/2","text":"화 20:00~21:00 투자론 2단원 31~40p"},
+  {"date":"12/2","text":"화 21:00~22:00 미시경제학 3단원 21~30p"},
+  {"date":"12/2","text":"화 22:00~23:00 투자론 2단원 41~50p"},
+  {"date":"12/2","text":"화 23:00~24:00 미시경제학 3단원 31~40p"},
+
+  /* 12/3 */
+  {"date":"12/3","text":"수 21:00~22:00 미시경제학 3단원 41~50p"},
+  {"date":"12/3","text":"수 22:00~23:00 미시경제학 3단원 51~60p (3단원 완료)"},
+  {"date":"12/3","text":"수 23:00~24:00 투자론 2단원 51~60p (2단원 완료)"},
+
+  /* 12/4 */
+  {"date":"12/4","text":"목 13:00~14:00 미시경제학 4단원 1~10p"},
+  {"date":"12/4","text":"목 14:00~15:00 투자론 3단원 1~10p"},
+  {"date":"12/4","text":"목 15:00~16:00 미시경제학 4단원 11~20p"},
+  {"date":"12/4","text":"목 17:00~18:00 소비자행동 6장 15p 암기 (1/4)"},
+  {"date":"12/4","text":"목 18:00~19:00 미시경제학 4단원 21~30p"},
+  {"date":"12/4","text":"목 20:00~21:00 소비자행동 6장 15p 암기 (2/4)"},
+  {"date":"12/4","text":"목 21:00~22:00 투자론 3단원 11~20p"},
+  {"date":"12/4","text":"목 22:00~23:00 미시경제학 4단원 31~40p"},
+  {"date":"12/4","text":"목 23:00~24:00 소비자행동 6장 15p 암기 (3/4)"},
+
+  /* 12/5 */
+  {"date":"12/5","text":"금 15:00~16:00 미시경제학 4단원 41~50p"},
+  {"date":"12/5","text":"금 16:00~17:00 투자론 3단원 21~30p"},
+  {"date":"12/5","text":"금 17:00~18:00 소비자행동 6장 15p 암기 (4/4) (6장 완료)"},
+  {"date":"12/5","text":"금 19:00~20:00 미시경제학 4단원 51~60p (초기 학습 완료)"},
+  {"date":"12/5","text":"금 20:00~21:00 투자론 3단원 31~40p"},
+  {"date":"12/5","text":"금 21:00~22:00 소비자행동 7장 20p 암기 (1/3)"},
+  {"date":"12/5","text":"금 22:00~23:00 투자론 3단원 41~50p"},
+  {"date":"12/5","text":"금 23:00~24:00 소비자행동 7장 20p 암기 (2/3)"},
+
+  /* 12/6 */
+  {"date":"12/6","text":"토 21:00~22:00 투자론 3단원 51~60p (3단원 완료)"},
+  {"date":"12/6","text":"토 22:00~23:00 투자론 4단원 1~10p"},
+  {"date":"12/6","text":"토 23:00~24:00 소비자행동 7장 20p 암기 (3/3) (7장 완료)"},
+
+  /* 12/7 */
+  {"date":"12/7","text":"일 13:00~14:00 투자론 4단원 11~20p"},
+  {"date":"12/7","text":"일 14:00~15:00 소비자행동 8장 20p 암기 (1/3)"},
+  {"date":"12/7","text":"일 15:00~16:00 경영정보 시스템 1단원 40p 정리 및 암기 (1/2)"},
+  {"date":"12/7","text":"일 17:00~18:00 투자론 4단원 21~30p"},
+  {"date":"12/7","text":"일 18:00~19:00 소비자행동 8장 20p 암기 (2/3)"},
+  {"date":"12/7","text":"일 20:00~21:00 투자론 4단원 31~40p"},
+  {"date":"12/7","text":"일 21:00~22:00 소비자행동 8장 20p 암기 (3/3) (8장 완료)"},
+  {"date":"12/7","text":"일 22:00~23:00 투자론 4단원 41~50p"},
+  {"date":"12/7","text":"일 23:00~24:00 경영정보 시스템 2단원 40p 정리 및 암기 (2/2)"},
+
+  /* 12/8 */
+  {"date":"12/8","text":"월 13:30~14:30 투자론 4단원 51~60p (4단원 완료)"},
+  {"date":"12/8","text":"월 14:30~15:30 소비자행동 9장 20p 암기 (1/3)"},
+  {"date":"12/8","text":"월 15:30~16:30 경영정보 시스템 3단원 40p 정리 및 암기 (1/2)"},
+  {"date":"12/8","text":"월 17:30~18:30 투자론 5단원 1~10p"},
+  {"date":"12/8","text":"월 18:30~19:30 소비자행동 9장 20p 암기 (2/3)"},
+  {"date":"12/8","text":"월 20:30~21:30 투자론 5단원 11~20p"},
+  {"date":"12/8","text":"월 21:30~22:30 소비자행동 9장 20p 암기 (3/3) (9장 완료)"},
+  {"date":"12/8","text":"월 22:30~23:30 경영정보 시스템 4단원 40p 정리 및 암기 (2/2)"},
+
+  /* 12/9 */
+  {"date":"12/9","text":"화 19:00~20:00 소비자행동 10장 20p 암기 (1/3)"},
+  {"date":"12/9","text":"화 20:00~21:00 경영정보 시스템 5단원 40p 정리 및 암기 (1/2)"},
+  {"date":"12/9","text":"화 21:00~22:00 소비자행동 10장 20p 암기 (2/3)"},
+  {"date":"12/9","text":"화 22:00~23:00 D-1 복습 미시, 경영, 조직이론 핵심 개념 및 오답 점검"},
+  {"date":"12/9","text":"화 23:00~24:00 소비자행동 10장 20p 암기 (3/3) (10장 완료)"},
+
+  /* 12/10 */
+  {"date":"12/10","text":"수 시험일 미시/경영/조직 시험 집중"},
+
+  /* 12/11 */
+  {"date":"12/11","text":"목 13:00~14:00 투자론 1단원 핵심 요약 및 암기"},
+
+  /* 12/12 */
+  {"date":"12/12","text":"금 시험일 소비자행동/투자론 시험 집중"},
+
+  /* 12/13 */
+  {"date":"12/13","text":"토 21:00~22:00 MIS 최종 복습 전 범위 최종 암기 점검 (1/2)"},
+  {"date":"12/13","text":"토 22:00~23:00 MIS 최종 복습 전 범위 최종 암기 점검 (2/2)"},
+
+  /* 12/14 */
+  {"date":"12/14","text":"일 13:00~24:00 휴식 충분한 수면 및 컨디션 조절!"},
+
+  /* 12/15 */
+  {"date":"12/15","text":"월 시험일 경영정보 시스템 시험 집중"}
+];
+
+// === 오늘(PC) 날짜 기준으로 필터링 ===
+function getTodayTasks() {
+  const now = new Date();
+  const key = (now.getMonth()+1) + "/" + now.getDate(); // ex: "11/27"
+  return tasks.filter(t => t.date === key);
+}
+
+// === LocalStorage ===
+let state = JSON.parse(localStorage.getItem("today_state") || '{"checked":{}, "dark":false}');
+function save() { localStorage.setItem("today_state", JSON.stringify(state)); }
+
+// === 렌더 ===
+function render(){
+  const box = document.getElementById("todo");
+  const todays = getTodayTasks();
+
+  document.getElementById("today").textContent =
+    new Date().toLocaleDateString('ko-KR', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+  box.innerHTML = "";
+  todays.forEach((t, i) => {
+    const id = "t_"+i;
+    const checked = !!state.checked[id];
+    const div = document.createElement("div");
+    div.className = "task";
+    div.innerHTML = `
+      <label>
+        <input type="checkbox" id="${id}" ${checked ? "checked" : ""}>
+        <span>${t.text}</span>
+      </label>`;
+    box.appendChild(div);
+
+    div.querySelector("input").addEventListener("change", e => {
+      state.checked[id] = e.target.checked;
+      save();
+      updateProgress();
+      if (getCompletionPercent() === 100) fireConfetti();
+    });
+  });
+
+  updateProgress();
+}
+
+// === 진행률 ===
+function getCompletionPercent(){
+  const todays = getTodayTasks();
+  if (todays.length === 0) return 0;
+  let done = 0;
+  todays.forEach((t, i) => { if(state.checked["t_"+i]) done++; });
+  return Math.round(done / todays.length * 100);
+}
+
+function updateProgress(){
+  const pct = getCompletionPercent();
+  document.getElementById("percent").textContent = pct + "%";
+  document.getElementById("bar").style.width = pct + "%";
+}
+
+// === 다크모드 ===
+document.getElementById("darkToggle").addEventListener("change", e => {
+  document.documentElement.classList.toggle("dark", e.target.checked);
+  state.dark = e.target.checked;
+  save();
+});
+if(state.dark){
+  document.documentElement.classList.add("dark");
+  document.getElementById("darkToggle").checked = true;
+}
+
+// === 리셋 ===
+document.getElementById("reset").addEventListener("click", () => {
+  if(confirm("모든 체크를 초기화할까요?")){
+    state.checked = {};
+    save();
+    render();
+  }
+});
+
+// === 폭죽 (간단) ===
+function fireConfetti(){
+  for (let i=0;i<60;i++){
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random()*100 + '%';
+    c.style.background = `hsl(${Math.random()*360},80%,60%)`;
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(), 3000);
+  }
+}
+
+// 시작
+render();
+</script>
+
+</body>
+</html>
